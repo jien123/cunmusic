@@ -1,96 +1,133 @@
 /**
- * CunMusic - 个人在线音乐播放器
- * 双音源: 网易云音乐 + QQ 音乐, 自动切换
+ * CunMusic - Telegram 频道音乐播放器
+ * 从 Telegram 频道读取用户上传的音乐文件并播放
+ *
+ * 环境变量:
+ *   TELEGRAM_BOT_TOKEN - Bot Token
+ *   TELEGRAM_CHANNEL_ID - 频道 ID (如 -1004428670443)
+ *   PORT - 端口
  */
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
-
-const netease = require('NeteaseCloudMusicApi');
-const qqMusic = require('qq-music-api');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID || '';
 
-// ---------- 统一歌曲格式 ----------
-// { id, name, artist, album, cover, duration(秒), source }
+if (!BOT_TOKEN) console.log('⚠️  未配置 TELEGRAM_BOT_TOKEN');
+if (!CHANNEL_ID) console.log('⚠️  未配置 TELEGRAM_CHANNEL_ID');
 
-// 网易云搜索
-async function searchNetease(keywords, limit) {
-  const r = await netease.search({ keywords, limit, type: 1 });
-  const songs = r.body?.result?.songs || [];
-  return songs.map(s => ({
-    id: String(s.id),
-    name: s.name,
-    artist: (s.ar || []).map(a => a.name).join(' / '),
-    album: s.al?.name || '',
-    cover: (s.al?.picUrl || '') + '?param=96y96',
-    duration: Math.round((s.dt || 0) / 1000),
-    source: 'netease',
-  }));
+const TG = `https://api.telegram.org/bot${BOT_TOKEN}`;
+
+// 简单的 GET 请求封装
+function tgGet(apiPath) {
+  return new Promise((resolve, reject) => {
+    https.get(TG + apiPath, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(e); }
+      });
+    }).on('error', reject);
+  });
 }
 
-// QQ 音乐搜索
-async function searchQQ(keywords, limit) {
-  const r = await qqMusic.api('search', { key: keywords, pageSize: limit });
-  const list = r?.data?.list || [];
-  return list.map(s => ({
-    id: String(s.songmid),
-    name: s.songname,
-    artist: (s.singer || []).map(a => a.name).join(' / '),
-    album: s.albumname || '',
-    cover: s.albummid ? `https://y.gtimg.cn/music/photo_new/T002R96x96M000${s.albummid}.jpg` : '',
-    duration: s.interval || 0,
-    source: 'qq',
-  }));
-}
+// 歌曲库 (内存)
+let library = [];   // { file_id, name, artist, size, date }
+let lastUpdateId = 0;
 
-// ---------- API: 搜索 ----------
-app.get('/api/search', async (req, res) => {
-  const keywords = (req.query.keywords || '').trim();
-  const limit = parseInt(req.query.limit) || 30;
-  const source = req.query.source || 'auto';
-  if (!keywords) return res.json({ songs: [] });
+// 从 Telegram 更新拉取新歌曲
+async function syncLibrary() {
+  if (!BOT_TOKEN) return;
+  try {
+    const d = await tgGet(`/getUpdates?offset=${lastUpdateId + 1}&limit=100&timeout=0`);
+    const updates = d.result || [];
+    for (const u of updates) {
+      lastUpdateId = Math.max(lastUpdateId, u.update_id);
+      const msg = u.channel_post || u.message;
+      if (!msg) continue;
+      // 只收目标频道的
+      if (String(msg.chat?.id) !== String(CHANNEL_ID)) continue;
+      const audio = msg.audio || msg.document;
+      if (!audio) continue;
+      // 只收音频文件 (mp3/flac/m4a/ogg/wav)
+      const fname = audio.file_name || '';
+      if (!/\.(mp3|flac|m4a|ogg|wav|aac)$/i.test(fname)) continue;
+      // 20MB 以上 Bot API 下载不了, 跳过
+      if ((audio.file_size || 0) > 20 * 1024 * 1024) continue;
+      if (library.find(s => s.file_id === audio.file_id)) continue;
 
-  const trySources = source === 'auto' ? ['netease', 'qq'] : [source];
-  for (const src of trySources) {
-    try {
-      const songs = src === 'qq'
-        ? await searchQQ(keywords, limit)
-        : await searchNetease(keywords, limit);
-      if (songs.length) return res.json({ songs, source: src });
-    } catch (e) {
-      console.error(`[${src}] 搜索失败:`, e.message?.slice(0, 100));
+      // 解析歌名 - 歌手
+      let name = fname.replace(/\.(mp3|flac|m4a|ogg|wav|aac)$/i, '');
+      let artist = '';
+      const m = name.match(/^(.+?)[-_–—](.+)$/);
+      if (m) { artist = m[1].trim(); name = m[2].trim(); }
+      // Telegram audio 自带的标题信息更准
+      if (msg.audio?.title) name = msg.audio.title;
+      if (msg.audio?.performer) artist = msg.audio.performer;
+
+      library.push({
+        file_id: audio.file_id,
+        name, artist,
+        size: audio.file_size || 0,
+        duration: msg.audio?.duration || 0,
+        date: msg.date || 0,
+      });
+      console.log(`🎵 新歌: ${artist} - ${name}`);
     }
+    // 按时间倒序
+    library.sort((a, b) => b.date - a.date);
+  } catch (e) {
+    console.error('同步失败:', e.message?.slice(0, 80));
   }
-  res.json({ songs: [], source: null });
+}
+
+// 启动时同步一次, 之后每 60 秒同步
+syncLibrary();
+setInterval(syncLibrary, 60 * 1000);
+
+// ---------- API: 歌曲列表 ----------
+app.get('/api/songs', (req, res) => {
+  res.json({ songs: library, count: library.length });
 });
 
-// ---------- API: 播放链接 ----------
-app.get('/api/song/url', async (req, res) => {
-  const { id, source } = req.query;
-  if (!id) return res.status(400).json({ error: '缺少 id' });
+// ---------- API: 手动同步 ----------
+app.get('/api/sync', async (req, res) => {
+  await syncLibrary();
+  res.json({ songs: library, count: library.length });
+});
 
+// ---------- API: 播放 (代理 Telegram 文件, 不暴露 Token) ----------
+app.get('/api/stream', async (req, res) => {
+  const file_id = req.query.file_id;
+  if (!file_id) return res.status(400).send('缺少 file_id');
   try {
-    if (source === 'qq') {
-      const r = await qqMusic.api('song/url', { id });
-      const url = r?.data?.[id] || r?.data?.sip?.[0] && null;
-      // qq-music-api 返回格式: { data: { songmid: url } }
-      const playUrl = typeof r?.data === 'object' ? (r.data[id] || Object.values(r.data)[0]) : null;
-      if (playUrl) return res.json({ url: playUrl });
-    } else {
-      const r = await netease.song_url({ id, br: 320000 });
-      const url = r.body?.data?.[0]?.url;
-      if (url) return res.json({ url });
-    }
-    res.status(404).json({ error: '无版权' });
+    const d = await tgGet(`/getFile?file_id=${encodeURIComponent(file_id)}`);
+    const filePath = d.result?.file_path;
+    if (!filePath) return res.status(404).send('文件太大或不存在 (Bot API 仅支持 20MB 以内)');
+    const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+    // 代理流式传输
+    https.get(fileUrl, (tgRes) => {
+      res.setHeader('Content-Type', tgRes.headers['content-type'] || 'audio/mpeg');
+      if (tgRes.headers['content-length']) res.setHeader('Content-Length', tgRes.headers['content-length']);
+      res.setHeader('Accept-Ranges', 'bytes');
+      tgRes.pipe(res);
+    }).on('error', () => res.status(502).send('读取失败'));
   } catch (e) {
-    console.error('获取播放链接失败:', e.message?.slice(0, 100));
-    res.status(500).json({ error: '获取失败' });
+    res.status(500).send('获取失败');
   }
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, songs: library.length, channel: !!CHANNEL_ID });
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.listen(PORT, () => {
-  console.log(`🎵 CunMusic 运行在 http://localhost:${PORT}`);
+  console.log(`🎵 CunMusic (Telegram) 运行在 http://localhost:${PORT}`);
 });
