@@ -27,15 +27,19 @@ async function search() {
     }
     playlist = songs;
     const srcName = d.source === 'qq' ? 'QQ音乐' : '网易云';
+    const coverFallback = "this.style.display='none';this.nextElementSibling.style.display='flex'";
     songList.innerHTML = `<div style="padding:8px 12px;color:var(--muted);font-size:0.8rem">音源: ${srcName} · ${songs.length} 首</div>` +
       songs.map((s, i) => `
       <div class="song-item" data-i="${i}">
-        ${s.cover ? `<img src="${s.cover}" loading="lazy" alt="">` : '<div style="width:48px;height:48px;border-radius:8px;background:var(--border);display:flex;align-items:center;justify-content:center">🎵</div>'}
+        <div style="position:relative;width:48px;height:48px;flex-shrink:0">
+          ${s.cover ? `<img src="${s.cover}" loading="lazy" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover" onerror="${coverFallback}">` : ''}
+          <div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,#1db954,#0d1117);display:${s.cover ? 'none' : 'flex'};align-items:center;justify-content:center;font-size:1.4rem;position:${s.cover ? 'absolute' : 'static'};top:0;left:0">🎵</div>
+        </div>
         <div class="info">
           <div class="name">${esc(s.name)}</div>
           <div class="artist">${esc(s.artist)}${s.album ? ' · ' + esc(s.album) : ''}</div>
         </div>
-        <div class="duration">${fmt(s.duration)}</div>
+        <div class="duration">${s.duration > 0 ? fmt(s.duration) : ''}</div>
       </div>
     `).join('');
     songList.querySelectorAll('.song-item').forEach(el => {
