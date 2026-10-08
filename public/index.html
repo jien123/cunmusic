@@ -9,30 +9,23 @@
 <body>
 
 <div class="app">
-  <!-- 顶栏 -->
   <header class="header">
     <div class="logo">🎵 CunMusic</div>
-    <div class="search-box">
-      <input type="search" id="searchInput" placeholder="搜索歌曲、歌手...">
-      <button id="searchBtn">搜索</button>
-    </div>
+    <button id="refreshBtn" class="refresh-btn">🔄 同步</button>
   </header>
 
-  <!-- 主体 -->
   <main class="main">
-    <!-- 歌曲列表 -->
     <section class="song-list" id="songList">
       <div class="welcome">
         <div class="welcome-icon">🎧</div>
-        <p>搜索你喜欢的音乐吧</p>
+        <p>加载中…</p>
       </div>
     </section>
   </main>
 
-  <!-- 播放条 -->
   <footer class="player">
     <div class="song-info">
-      <img id="cover" src="" alt="">
+      <div class="cover-ph">🎵</div>
       <div>
         <div class="song-name" id="songName">未在播放</div>
         <div class="singer" id="singer">—</div>
