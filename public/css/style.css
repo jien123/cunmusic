@@ -1,0 +1,94 @@
+/* CunMusic - 暗黑音乐播放器 */
+:root {
+  --accent: #1db954;
+  --bg: #0d1117;
+  --card: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* 顶栏 */
+.header {
+  display: flex; align-items: center; gap: 20px;
+  padding: 16px 24px; background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.logo { font-size: 1.4rem; font-weight: 800; white-space: nowrap; }
+.search-box { display: flex; gap: 8px; flex: 1; max-width: 500px; }
+.search-box input {
+  flex: 1; padding: 10px 16px; border-radius: 20px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); outline: none; font-size: 0.9rem;
+}
+.search-box input:focus { border-color: var(--accent); }
+.search-box button {
+  padding: 10px 24px; border-radius: 20px; border: none;
+  background: var(--accent); color: #000; font-weight: 700;
+  cursor: pointer; font-size: 0.9rem;
+}
+
+/* 歌曲列表 */
+.main { flex: 1; padding: 20px; max-width: 900px; width: 100%; margin: 0 auto; }
+.welcome { text-align: center; padding: 80px 20px; color: var(--muted); }
+.welcome-icon { font-size: 4rem; margin-bottom: 16px; }
+
+.song-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; border-radius: 10px; cursor: pointer;
+  transition: background 0.2s;
+}
+.song-item:hover { background: var(--card); }
+.song-item.playing { background: var(--card); border-left: 3px solid var(--accent); }
+.song-item img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; }
+.song-item .info { flex: 1; min-width: 0; }
+.song-item .name { font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-item .artist { font-size: 0.8rem; color: var(--muted); }
+.song-item .duration { font-size: 0.8rem; color: var(--muted); }
+
+/* 播放条 */
+.player {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 24px; background: var(--card);
+  border-top: 1px solid var(--border);
+  position: sticky; bottom: 0;
+}
+.song-info { display: flex; align-items: center; gap: 12px; min-width: 200px; }
+.song-info img { width: 48px; height: 48px; border-radius: 8px; background: var(--border); }
+.song-name { font-size: 0.9rem; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.singer { font-size: 0.75rem; color: var(--muted); }
+
+.controls { display: flex; gap: 8px; }
+.controls button {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: transparent; color: var(--text);
+  font-size: 1.2rem; cursor: pointer;
+}
+.controls button.play {
+  background: var(--accent); color: #000; font-size: 1rem;
+}
+.controls button:hover { transform: scale(1.05); }
+
+.progress-wrap { display: flex; align-items: center; gap: 8px; flex: 1; }
+.progress-wrap span { font-size: 0.75rem; color: var(--muted); min-width: 36px; }
+input[type="range"] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+
+.volume { display: flex; align-items: center; gap: 8px; }
+.volume input { width: 80px; }
+
+@media (max-width: 640px) {
+  .header { flex-direction: column; }
+  .volume { display: none; }
+  .song-info { min-width: 0; }
+}
