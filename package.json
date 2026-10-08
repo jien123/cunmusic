@@ -2,11 +2,9 @@
   "author": "",
   "dependencies": {
     "dotenv": "^16.0.0",
-    "express": "^4.18.0",
-    "NeteaseCloudMusicApi": "^4.0.0",
-    "qq-music-api": "^1.0.0"
+    "express": "^4.18.0"
   },
-  "description": "CunMusic - 个人在线音乐播放器",
+  "description": "CunMusic - Telegram 频道音乐播放器",
   "license": "MIT",
   "main": "server.js",
   "name": "cunmusic",
