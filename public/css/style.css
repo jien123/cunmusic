@@ -26,6 +26,11 @@ body {
   position: sticky; top: 0; z-index: 10;
 }
 .logo { font-size: 1.4rem; font-weight: 800; white-space: nowrap; }
+.refresh-btn {
+  margin-left: auto; padding: 8px 18px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); cursor: pointer; font-size: 0.85rem;
+}
+.refresh-btn:hover { border-color: var(--accent); }
 .search-box { display: flex; gap: 8px; flex: 1; max-width: 500px; }
 .search-box input {
   flex: 1; padding: 10px 16px; border-radius: 20px;
@@ -65,7 +70,11 @@ body {
   position: sticky; bottom: 0;
 }
 .song-info { display: flex; align-items: center; gap: 12px; min-width: 200px; }
-.song-info img { width: 48px; height: 48px; border-radius: 8px; background: var(--border); }
+.cover-ph {
+  width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;
+  background: linear-gradient(135deg, #1db954, #0d1117);
+  display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+}
 .song-name { font-size: 0.9rem; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .singer { font-size: 0.75rem; color: var(--muted); }
 
