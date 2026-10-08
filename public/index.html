@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CunMusic · 我的音乐</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+  <!-- 顶栏 -->
+  <header class="header">
+    <div class="logo">🎵 CunMusic</div>
+    <div class="search-box">
+      <input type="search" id="searchInput" placeholder="搜索歌曲、歌手...">
+      <button id="searchBtn">搜索</button>
+    </div>
+  </header>
+
+  <!-- 主体 -->
+  <main class="main">
+    <!-- 歌曲列表 -->
+    <section class="song-list" id="songList">
+      <div class="welcome">
+        <div class="welcome-icon">🎧</div>
+        <p>搜索你喜欢的音乐吧</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- 播放条 -->
+  <footer class="player">
+    <div class="song-info">
+      <img id="cover" src="" alt="">
+      <div>
+        <div class="song-name" id="songName">未在播放</div>
+        <div class="singer" id="singer">—</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="prevBtn">⏮</button>
+      <button id="playBtn" class="play">▶</button>
+      <button id="nextBtn">⏭</button>
+    </div>
+    <div class="progress-wrap">
+      <span id="curTime">0:00</span>
+      <input type="range" id="progress" value="0" max="100">
+      <span id="duration">0:00</span>
+    </div>
+    <div class="volume">
+      <span>🔊</span>
+      <input type="range" id="volume" value="80" max="100">
+    </div>
+    <audio id="audio" preload="none"></audio>
+  </footer>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
